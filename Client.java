@@ -10,11 +10,11 @@ public class Client {
              Scanner scanner = new Scanner(System.in)) {
 
             while (true) {
-                String serverMessage = reader.readLine();
-                if (serverMessage == null) break;
-                System.out.println(serverMessage);
+                String serverMsg = reader.readLine();
+                if (serverMsg == null) break;
+                System.out.println(serverMsg);
 
-                if (serverMessage.contains("Do you want to 'register' or 'login'?")) {
+                if (serverMsg.contains("Do you want to 'register' or 'login'?")) {
                     String choice = scanner.nextLine();
                     writer.println(choice);
 
@@ -25,21 +25,21 @@ public class Client {
                         System.out.println("Invalid option. Please type 'register' or 'login'");
                     }
                 } 
-                else if(serverMessage.contains("Enter your username:")||serverMessage.contains("Enter your password:")||serverMessage.contains("Enter your type [Customer/Driver]:")) {
+                else if(serverMsg.contains("Enter your username:")||serverMsg.contains("Enter your password:")||serverMsg.contains("Enter your type [Customer/Driver]:")) {
 
                     String userInput = scanner.nextLine();
                     writer.println(userInput);
                 }
-                else if (serverMessage.contains("Registered successfully!")||serverMessage.contains("You're logged in!")){
+                else if (serverMsg.contains("Registered successfully!")||serverMsg.contains("You're logged in!")){
                     break;
                 }
             }
 
             Thread t=new Thread(() -> {
                 try{
-                    String serverMessage;
-                    while(!socket.isClosed()&&(serverMessage = reader.readLine()) != null){
-                        System.out.println(serverMessage);
+                    String serverMsg;
+                    while(!socket.isClosed()&&(serverMsg = reader.readLine()) != null){
+                        System.out.println(serverMsg);
                     }
                 }
                 catch (IOException e) {

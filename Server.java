@@ -8,6 +8,8 @@ public class Server {
     private static final List<Customer> customers = new ArrayList<>();
     private static final List<Driver> drivers = new ArrayList<>();
     private static final Map<String, User> registeredUsers = new HashMap<>();
+    public static final Map<String, Socket> availableDrivers=new HashMap<>();
+    public static final Map<Customer, PrintWriter> waitingCustomers=new HashMap<>();
     private static int id = 1;
 
     private static final String ADMIN_USERNAME = "Admin";
@@ -36,13 +38,17 @@ public class Server {
         customers.add(customer);
     }
 
-    public static synchronized void addDriver(Driver driver) {
+    public static synchronized void addDriver(Driver driver, Socket s) {
         drivers.add(driver);
+        availableDrivers.put(driver.getUsername(), s);
     }
 
     public static synchronized void removeClient(Object client) {
         if (client instanceof Customer) customers.remove(client);
-        if (client instanceof Driver) drivers.remove(client);
+        if (client instanceof Driver){
+             drivers.remove(client);
+            availableDrivers.remove(((Driver)client).getUsername()); 
+        }
     }
 
     public static synchronized boolean register(String username, String password, String type) {
@@ -70,5 +76,39 @@ public class Server {
 
     public static List<Driver> getAvailableDrivers() {
         return new ArrayList<>(drivers);
+    }
+    public static synchronized void addAvailableDrivers(Driver d, Socket s){
+        availableDrivers.put(d.getUsername(), s);
+    }
+    public static synchronized void removeAvailableDrivers(String driver){
+        availableDrivers.remove(driver);
+    }
+    public static synchronized void addWaitingCustomer(Customer c, PrintWriter w){
+        waitingCustomers.put(c, w);
+    }
+    public static synchronized Customer getWaitingCustomer(){
+        if(!waitingCustomers.isEmpty()) return waitingCustomers.keySet().iterator().next();
+        return null;
+    }
+    public static synchronized void removeWaitingCustomer(Customer customer){
+        waitingCustomers.remove(customer);
+    }
+    public static synchronized Socket getavailableDriver(){
+        if(!availableDrivers.isEmpty()){
+            String d=availableDrivers.keySet().iterator().next();
+            return availableDrivers.remove(d);
+        }
+        return null;
+    }
+    public static synchronized void broadcast(String msg){
+        for(Map.Entry<String, Socket> val:availableDrivers.entrySet()){
+            try{
+                PrintWriter w=new PrintWriter(val.getValue().getOutputStream(), true);
+                w.println(msg);
+            }
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

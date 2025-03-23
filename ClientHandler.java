@@ -41,7 +41,7 @@ public class ClientHandler implements Runnable {
                     }
                     else if (user.getType().equalsIgnoreCase("Driver")) {
                         Driver driver = new Driver(id, user.getUsername(), user.getPassword(), socket);
-                        Server.addDriver(driver);
+                        Server.addDriver(driver, socket);
                         handleDriver(driver);
                     }
                 }
@@ -55,17 +55,30 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void handleCustomer(Customer customer) throws IOException {
-        writer.println("Welcome, " + customer.getUsername() + "! You can request a ride now! Enter 'disconnect' or 'request a ride'");
+    private void handleCustomer(Customer c) throws IOException {
+        writer.println("Welcome, " + c.getUsername() + "! You can request a ride now! Enter 'disconnect' or 'request a ride'");
         while (true) {
             String message = reader.readLine();
             if (message == null || message.equalsIgnoreCase("disconnect")) {
-                Server.removeClient(customer);
+                Server.removeClient(c);
+                Server.removeWaitingCustomer(c);
                 break;
             }
             if (message.equalsIgnoreCase("request a ride")) {
-                writer.println("Waiting for a driver...");
-                /////////////
+                writer.println("Enter pickup location:");
+                String pickupLocation = reader.readLine();
+                writer.println("Enter destination:");
+                String destination = reader.readLine();
+
+                c.setPickupLocation(pickupLocation);
+                c.setDestination(destination);
+                if(Server.availableDrivers.isEmpty())
+                    writer.println("There are no available drivers!, try again later");
+                    else{
+                        Server.addWaitingCustomer(c, writer);
+                        Server.broadcast("Customer '"+c.getUsername()+"' is requesting a ride from '"+c.getPickupLocation()+"' to '"+c.getDestination() + "', please enter 'accept' to accept the ride");
+                        writer.println("We notified our drivers for your request! please wait for a driver to accept...");
+                    }
             }
         }
     }
@@ -76,11 +89,30 @@ public class ClientHandler implements Runnable {
             String message = reader.readLine();
             if (message == null || message.equalsIgnoreCase("disconnect")) {
                 Server.removeClient(driver);
+                Server.removeAvailableDrivers(driver.getUsername());
                 break;
             }
-            if (message.equalsIgnoreCase("offer ride")) {
-                writer.println("Waiting for customers to request...");
-                /////////////
+            if (message.equalsIgnoreCase("offer a ride")) {
+                Server.addAvailableDrivers(driver, socket);
+                writer.println("You're now an available driver");
+                for(Object c:Server.waitingCustomers.keySet()){
+                    Customer c2=(Customer)c;
+                    writer.println("Customer '"+c2.getUsername()+"' is requesting a ride from '"+c2.getPickupLocation()+"' to '"+c2.getDestination()+"' , enter 'accept' to accept it");
+                }
+            }
+            if (message.equalsIgnoreCase("accept")) {
+                Customer c=Server.getWaitingCustomer();
+                if (c != null) {
+                    PrintWriter customerWriter = Server.waitingCustomers.get(c);
+                    if (customerWriter != null) {
+                        customerWriter.println("A driver has accepted your ride request! The driver is on the way");
+                        Server.removeWaitingCustomer(c);
+                        writer.println("You have been assigned to a customer");
+                    }
+                }
+                else{
+                    writer.println("No ride requests available");
+                }
             }
         }
     }
