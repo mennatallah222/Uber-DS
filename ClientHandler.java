@@ -63,6 +63,7 @@ public class ClientHandler implements Runnable {
             if (message == null || message.equalsIgnoreCase("disconnect")) {
                 Server.removeClient(c);
                 Server.removeWaitingCustomer(c);
+                socket.close();
                 break;
             }
             if (message.equalsIgnoreCase("request a ride")) {
@@ -91,6 +92,7 @@ public class ClientHandler implements Runnable {
             if (message == null || message.equalsIgnoreCase("disconnect")) {
                 Server.removeClient(driver);
                 Server.removeAvailableDrivers(driver.getUsername());
+                socket.close();
                 break;
             }
             if (message.equalsIgnoreCase("offer a ride")) {
