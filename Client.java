@@ -40,6 +40,10 @@ public class Client {
                     String serverMsg;
                     while(!socket.isClosed()&&(serverMsg = reader.readLine()) != null){
                         System.out.println(serverMsg);
+                        if (serverMsg.contains("Do you accept? (yes/no)")) {
+                            String response = scanner.nextLine();
+                            writer.println(response);
+                        }
                     }
                 }
                 catch (IOException e) {
