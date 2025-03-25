@@ -95,20 +95,27 @@ public class ClientHandler implements Runnable {
             }
             if (message.equalsIgnoreCase("offer a ride")) {
                 Server.addAvailableDrivers(driver, socket);
-                writer.println("You're now an available driver.");
+                writer.println("You're now an available driver");
     
                 if (Server.waitingCustomers.isEmpty()) {
                     writer.println("No ride requests available at the moment.");
                     continue;
                 }
     
-                writer.println("Available ride requests:");
-                for (Customer c : Server.waitingCustomers.keySet()) {
-                    writer.println("Customer '" + c.getUsername() + "' is requesting a ride from '" + c.getPickupLocation() + "' to '" + c.getDestination() + "'");
+                if (!Server.waitingCustomers.isEmpty()) {
+                    for (Customer c : Server.waitingCustomers.keySet()) {
+                        writer.println("Customer '" + c.getUsername() + "' is requesting a ride from '" + c.getPickupLocation() + "' to '" + c.getDestination() + "', please enter 'accept' to accept the ride");
+                    }
                 }
+
+                else {
+                    writer.println("No ride requests available at the moment.");
+                }
+            }
+            else if (message.equalsIgnoreCase("accept")) {
                 writer.println("Enter the username of the customer you want to accept:");
-    
                 String selectedCustomer = reader.readLine();
+
                 Customer chosenCustomer = null;
                 for (Customer c : Server.waitingCustomers.keySet()) {
                     if (c.getUsername().equalsIgnoreCase(selectedCustomer)) {
@@ -116,14 +123,11 @@ public class ClientHandler implements Runnable {
                         break;
                     }
                 }
-    
+
                 if (chosenCustomer != null) {
-                    writer.println("You have accepted the ride for customer '" + chosenCustomer.getUsername() + "'. Waiting for confirmation...");
-                    
-                    // ✅ Call handleRideOffer
                     Server.handleRideOffer(chosenCustomer, driver);
                 } else {
-                    writer.println("Invalid customer selection. Try again.");
+                    writer.println("Customer not found or already accepted by another driver.");
                 }
             }
         }

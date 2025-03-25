@@ -11,7 +11,7 @@ public class Client {
 
             while (true) {
                 String serverMsg = reader.readLine();
-                if (serverMsg == null) break; // Exit if server disconnects
+                if (serverMsg == null) break;
                 System.out.println(serverMsg);
 
                 if (serverMsg.contains("Do you want to 'register' or 'login'?")) {
@@ -34,7 +34,6 @@ public class Client {
                 }
             }
 
-            // Background thread to listen for server messages
             Thread listenerThread = new Thread(() -> {
                 try {
                     String serverMsg;
@@ -44,6 +43,7 @@ public class Client {
                         if (serverMsg.contains("Do you accept? (yes/no)")) {
                             String response = readInput(scanner);
                             writer.println(response);
+                            writer.flush();
                         }
                     }
                 } catch (IOException e) {
@@ -55,7 +55,6 @@ public class Client {
 
             listenerThread.start();
 
-            // Main loop for sending messages
             while (true) {
                 String clientMessage = readInput(scanner);
                 writer.println(clientMessage);
@@ -73,7 +72,6 @@ public class Client {
         }
     }
 
-    // Safe input method to prevent IndexOutOfBoundsException
     private static synchronized String readInput(Scanner scanner) {
         try {
             return scanner.nextLine();

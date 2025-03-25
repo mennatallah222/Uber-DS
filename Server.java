@@ -112,40 +112,42 @@ public class Server {
         }
     }
     public static void handleRideOffer(Customer customer, Driver driver) {
-        new Thread(() -> {
-            try {
-                PrintWriter customerWriter = Server.waitingCustomers.get(customer);
-                if (customerWriter == null) return;
-    
-                customerWriter.println("Driver " + driver.getUsername() + " has accepted your ride. Do you accept? (yes/no)");
-    
-                // Reuse existing reader
-                BufferedReader customerReader = customer.getReader();
-                if (customerReader == null) return;
-    
-                String response = customerReader.readLine();
-    
-                if (response == null) {
-                    customerWriter.println("❌ No response received. Ride canceled.");
-                    driver.getWriter().println("❌ Customer did not respond. Try another request.");
-                    return;
-                }
-    
-                if (response.equalsIgnoreCase("yes")) {
-                    customerWriter.println("✅ Ride confirmed! The driver is on the way.");
-                    driver.getWriter().println("✅ Ride accepted! Proceed to pick up the customer.");
-    
-                    Server.removeWaitingCustomer(customer);
-                } else {
-                    customerWriter.println("❌ Ride declined. Searching for another driver...");
-                    driver.getWriter().println("❌ The customer declined. Try another request.");
-                }
-    
-            } catch (IOException e) {
-                System.err.println("Error during ride offer: " + e.getMessage());
-                driver.getWriter().println("❌ An error occurred while handling the ride.");
+    new Thread(() -> {
+        try {
+            PrintWriter customerWriter = customer.getWriter();
+            PrintWriter driverWriter = driver.getWriter();
+            if (customerWriter == null || driverWriter == null) return;
+
+            customerWriter.println("Driver " + driver.getUsername() + " has accepted your ride. Do you accept? (yes/no)");
+            BufferedReader customerReader = customer.getReader();
+            if (customerReader == null) return;
+
+            String response = customerReader.readLine();
+            if (response == null) {
+                customerWriter.println("No response received. Ride canceled.");
+                driver.getWriter().println("Customer did not respond. Try another request.");
+                return;
             }
-        }).start();
-    }
+
+            if (response.trim().equalsIgnoreCase("yes")) {
+                customerWriter.println("Ride confirmed! The driver is on the way");
+                customerWriter.flush();
+
+                driver.getWriter().println("Ride accepted! Proceed to pick up the customer");
+                Server.removeWaitingCustomer(customer);
+
+                driverWriter.println("Head to: " + customer.getPickupLocation() + " to pick up: " + customer.getUsername());
+                driverWriter.flush();
+            } else {
+                customerWriter.println("Ride declined. Searching for another driver...");
+                driver.getWriter().println("The customer declined. Try another request.");
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }).start();
+}
+
     
 }
