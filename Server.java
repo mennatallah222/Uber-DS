@@ -111,43 +111,40 @@ public class Server {
             }
         }
     }
-    
+    private static final Map<String, Customer> activeRides = new HashMap<>();
+
     public static synchronized void handleRideOffer(Customer customer, Driver driver) {
         PrintWriter customerWriter = waitingCustomers.get(customer);
-        PrintWriter driverWriter = null;
         if (customerWriter == null) return;
+    
         try {
             customerWriter.println("Driver " + driver.getUsername() + " has accepted your ride. Do you accept? (yes/no)");
-
+    
             BufferedReader customerReader = new BufferedReader(new InputStreamReader(customer.getSocket().getInputStream()));
             String response = customerReader.readLine();
-
-            driverWriter = new PrintWriter(driver.getSocket().getOutputStream(), true);
-
+    
+            PrintWriter driverWriter = new PrintWriter(driver.getSocket().getOutputStream(), true);
+    
             if (response == null) {
                 customerWriter.println("No response received. Ride canceled.");
-                driver.getWriter().println("Customer did not respond. Try another request.");
+                driverWriter.println("Customer did not respond. Try another request.");
                 return;
             }
-
+    
             if (response.trim().equalsIgnoreCase("yes")) {
-                customerWriter.println("Ride confirmed! The driver is on the way");
-                customerWriter.flush();
-
-                driver.getWriter().println("Ride accepted! Proceed to pick up the customer");
-                Server.removeWaitingCustomer(customer);
-
+                customerWriter.println("Ride confirmed!");
+                driverWriter.println("Ride accepted! Proceed to pick up the customer.");
+    
+                activeRides.put(driver.getUsername(), customer);
+    
                 driverWriter.println("Head to: " + customer.getPickupLocation() + " to pick up: " + customer.getUsername());
-                driverWriter.flush();
+    
             } else {
                 customerWriter.println("Ride declined. Searching for another driver...");
-                driver.getWriter().println("The customer declined. Try another request.");
+                driverWriter.println("The customer declined. Try another request.");
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-
 }
