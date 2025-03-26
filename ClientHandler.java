@@ -44,7 +44,6 @@ public class ClientHandler implements Runnable {
                         Server.addDriver(driver, socket);
                         handleDriver(driver);
                     }
-                    
                 }
                 else {
                     writer.println("Invalid choice! Please enter 'register' or 'login'");
@@ -56,82 +55,90 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void handleCustomer(Customer c) throws IOException {
-        writer.println("Welcome, " + c.getUsername() + "! You can request a ride now! Enter 'disconnect' or 'request a ride'");
-        while (true) {
-            String message = reader.readLine();
-            if (message == null || message.equalsIgnoreCase("disconnect")) {
-                Server.removeClient(c);
-                Server.removeWaitingCustomer(c);
-                socket.close();
-                break;
-            }
-            if (message.equalsIgnoreCase("request a ride")) {
-                writer.println("Enter pickup location:");
-                String pickupLocation = reader.readLine();
-                writer.println("Enter destination:");
-                String destination = reader.readLine();
+    private void handleCustomer(Customer c) {
+        try {
+            writer.println("Welcome, " + c.getUsername() + "! You can request a ride now! Enter 'disconnect' or 'request a ride'");
 
-                c.setPickupLocation(pickupLocation);
-                c.setDestination(destination);
-                if(Server.availableDrivers.isEmpty())
-                    writer.println("There are no available drivers!, try again later");
-                    else{
+            while (true) {
+                String message = reader.readLine();
+                if (message == null || message.equalsIgnoreCase("disconnect")) {
+                    Server.removeClient(c);
+                    Server.removeWaitingCustomer(c);
+                    socket.close();
+                    break;
+                }
+                if (message.equalsIgnoreCase("request a ride")) {
+                    writer.println("Enter pickup location:");
+                    String pickupLocation = reader.readLine();
+                    writer.println("Enter destination:");
+                    String destination = reader.readLine();
+
+                    c.setPickupLocation(pickupLocation);
+                    c.setDestination(destination);
+
+                    if (Server.availableDrivers.isEmpty()) {
+                        writer.println("There are no available drivers! Try again later.");
+                    }
+                    else {
                         Server.addWaitingCustomer(c, writer);
-                        Server.broadcast("Customer '"+c.getUsername()+"' is requesting a ride from '"+c.getPickupLocation()+"' to '"+c.getDestination() + "', please enter 'accept' to accept the ride");
-                        writer.println("We notified our drivers for your request! please wait for a driver to accept...");
+                        Server.broadcast("Customer '" + c.getUsername() + "' is requesting a ride from '" + c.getPickupLocation() + "' to '" + c.getDestination() + "'. Please enter 'accept' to accept the ride.");
+                        writer.println("We notified our drivers for your request! Please wait for a driver to accept...");
                     }
+                }
             }
         }
+        catch (IOException e) {
+            System.out.println("Error handling customer: " + e.getMessage());
+        }
     }
-    private void handleDriver(Driver driver) throws IOException {
-        writer.println("Welcome, " + driver.getUsername() + "! You can offer rides! Enter 'disconnect' or 'offer a ride'");
-    
-        while (true) {
-            String message = reader.readLine();
-            if (message == null || message.equalsIgnoreCase("disconnect")) {
-                Server.removeClient(driver);
-                Server.removeAvailableDrivers(driver.getUsername());
-                socket.close();
-                break;
-            }
-            if (message.equalsIgnoreCase("offer a ride")) {
-                Server.addAvailableDrivers(driver, socket);
-                writer.println("You're now an available driver");
-    
-                if (Server.waitingCustomers.isEmpty()) {
-                    writer.println("No ride requests available at the moment.");
-                    continue;
+
+    private void handleDriver(Driver driver) {
+        try {
+            writer.println("Welcome, " + driver.getUsername() + "! You can offer rides! Enter 'disconnect' or 'offer a ride'");
+
+            while (true) {
+                String message = reader.readLine();
+                if (message == null || message.equalsIgnoreCase("disconnect")) {
+                    Server.removeClient(driver);
+                    Server.removeAvailableDrivers(driver.getUsername());
+                    socket.close();
+                    break;
                 }
-    
-                if (!Server.waitingCustomers.isEmpty()) {
+                if (message.equalsIgnoreCase("offer a ride")) {
+                    Server.addAvailableDrivers(driver, socket);
+                    writer.println("You're now an available driver");
+
+                    if (Server.waitingCustomers.isEmpty()) {
+                        writer.println("No ride requests available at the moment.");
+                        continue;
+                    }
+
                     for (Customer c : Server.waitingCustomers.keySet()) {
-                        writer.println("Customer '" + c.getUsername() + "' is requesting a ride from '" + c.getPickupLocation() + "' to '" + c.getDestination() + "', please enter 'accept' to accept the ride");
+                        writer.println("Customer '" + c.getUsername() + "' is requesting a ride from '" + c.getPickupLocation() + "' to '" + c.getDestination() + "'. Please enter 'accept' to accept the ride.");
                     }
                 }
+                else if (message.equalsIgnoreCase("accept")) {
+                    writer.println("Enter the username of the customer you want to accept:");
+                    String selectedCustomer = reader.readLine();
 
-                else {
-                    writer.println("No ride requests available at the moment.");
-                }
-            }
-            else if (message.equalsIgnoreCase("accept")) {
-                writer.println("Enter the username of the customer you want to accept:");
-                String selectedCustomer = reader.readLine();
-
-                Customer chosenCustomer = null;
-                for (Customer c : Server.waitingCustomers.keySet()) {
-                    if (c.getUsername().equalsIgnoreCase(selectedCustomer)) {
-                        chosenCustomer = c;
-                        break;
+                    Customer chosenCustomer = null;
+                    for (Customer c : Server.waitingCustomers.keySet()) {
+                        if (c.getUsername().equalsIgnoreCase(selectedCustomer)) {
+                            chosenCustomer = c;
+                            break;
+                        }
                     }
-                }
 
-                if (chosenCustomer != null) {
-                    Server.handleRideOffer(chosenCustomer, driver);
-                } else {
-                    writer.println("Customer not found or already accepted by another driver.");
+                    if (chosenCustomer != null) {
+                        Server.handleRideOffer(chosenCustomer, driver);
+                    }
+                    else
+                        writer.println("Customer not found or already accepted by another driver.");
                 }
             }
         }
+        catch (IOException e) {
+            System.out.println("Error handling driver: " + e.getMessage());
+        }
     }
-}    
+}

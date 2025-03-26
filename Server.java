@@ -111,18 +111,19 @@ public class Server {
             }
         }
     }
-    public static void handleRideOffer(Customer customer, Driver driver) {
-    new Thread(() -> {
+    
+    public static synchronized void handleRideOffer(Customer customer, Driver driver) {
+        PrintWriter customerWriter = waitingCustomers.get(customer);
+        PrintWriter driverWriter = null;
+        if (customerWriter == null) return;
         try {
-            PrintWriter customerWriter = customer.getWriter();
-            PrintWriter driverWriter = driver.getWriter();
-            if (customerWriter == null || driverWriter == null) return;
-
             customerWriter.println("Driver " + driver.getUsername() + " has accepted your ride. Do you accept? (yes/no)");
-            BufferedReader customerReader = customer.getReader();
-            if (customerReader == null) return;
 
+            BufferedReader customerReader = new BufferedReader(new InputStreamReader(customer.getSocket().getInputStream()));
             String response = customerReader.readLine();
+
+            driverWriter = new PrintWriter(driver.getSocket().getOutputStream(), true);
+
             if (response == null) {
                 customerWriter.println("No response received. Ride canceled.");
                 driver.getWriter().println("Customer did not respond. Try another request.");
@@ -143,11 +144,10 @@ public class Server {
                 driver.getWriter().println("The customer declined. Try another request.");
             }
         }
-        catch (Exception e) {
+        catch (IOException e) {
             e.printStackTrace();
         }
-    }).start();
-}
+    }
 
-    
+
 }

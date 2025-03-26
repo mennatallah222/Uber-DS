@@ -17,17 +17,26 @@ public class Client {
                 if (serverMsg.contains("Do you want to 'register' or 'login'?")) {
                     String choice = readInput(scanner);
                     writer.println(choice);
+                    writer.flush();
 
                     if (!choice.equalsIgnoreCase("register") && !choice.equalsIgnoreCase("login")) {
                         System.out.println("Invalid option. Please type 'register' or 'login'");
                     }
-                } 
+                }
+                else if (serverMsg.contains("Do you accept? (yes/no)")) {
+                    String response = scanner.nextLine();
+                    writer.println(response);
+                    writer.flush();
+
+                }
                 else if (serverMsg.contains("Enter your username:") ||
                          serverMsg.contains("Enter your password:") ||
                          serverMsg.contains("Enter your type [Customer/Driver]:")) {
 
                     String userInput = readInput(scanner);
                     writer.println(userInput);
+                    writer.flush();
+
                 } 
                 else if (serverMsg.contains("Registered successfully!") || serverMsg.contains("You're logged in!")) {
                     break;
@@ -39,12 +48,6 @@ public class Client {
                     String serverMsg;
                     while (!socket.isClosed() && (serverMsg = reader.readLine()) != null) {
                         System.out.println(serverMsg);
-
-                        if (serverMsg.contains("Do you accept? (yes/no)")) {
-                            String response = readInput(scanner);
-                            writer.println(response);
-                            writer.flush();
-                        }
                     }
                 } catch (IOException e) {
                     if (!socket.isClosed()) {
@@ -58,7 +61,7 @@ public class Client {
             while (true) {
                 String clientMessage = readInput(scanner);
                 writer.println(clientMessage);
-
+                writer.flush();
                 if (clientMessage.equalsIgnoreCase("disconnect")) {
                     socket.close();
                     break;
@@ -71,11 +74,13 @@ public class Client {
             System.err.println("Client error: " + e.getMessage());
         }
     }
+    
 
     private static synchronized String readInput(Scanner scanner) {
         try {
             return scanner.nextLine();
-        } catch (IllegalStateException e) {
+        }
+        catch (IllegalStateException e) {
             System.err.println("Input error: " + e.getMessage());
             return "";
         }
