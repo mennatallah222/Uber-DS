@@ -9,6 +9,7 @@ public class Driver extends User {
     private PrintWriter writer;
     private BufferedReader reader;
     private boolean inRide;
+    private Customer assignedCustomer; // Add this field
 
     public Driver(int id, String username, String password, Socket socket) {
         super(id, username, password, "Driver");
@@ -41,4 +42,12 @@ public class Driver extends User {
     public void setInRide(boolean inRide) {
         this.inRide = inRide;
     }
+    public void setAssignedCustomer(Customer customer) {
+        this.assignedCustomer = customer;
+    }
+    
+    public Customer getAssignedCustomer() {
+        return this.assignedCustomer;
+    }
+    
 }

@@ -62,13 +62,13 @@ public class ClientHandler implements Runnable {
                 if (message == null) break;
     
                 if (message.equalsIgnoreCase("disconnect")) {
-                    if (inRide) {
-                        writer.println("❌ You cannot disconnect during an ongoing ride!");
+                    if (c.isInRide()) {
+                        writer.println("You cannot disconnect during an ongoing ride!");
                     } else {
                         writer.println("Disconnected successfully.");
                         Server.removeClient(c);
                         Server.removeWaitingCustomer(c);
-                        socket.close();
+                      
                         break;
                     }
                 }
@@ -144,13 +144,19 @@ public class ClientHandler implements Runnable {
 
                     if (chosenCustomer != null) {
                         assignedCustomer = chosenCustomer;
-                        inRide = true;
                         Server.handleRideOffer(chosenCustomer, driver);
-                        notifyCustomerRideStatus("Driver '" + driver.getUsername() + "' is on the way!");
-                        handleRideUpdates(driver, chosenCustomer);
+                    
+                        if (driver.getAssignedCustomer() != null) { // Only proceed if customer accepted the ride
+                            inRide = true;
+                            notifyCustomerRideStatus("Driver '" + driver.getUsername() + "' is on the way!");
+                            handleRideUpdates(driver, chosenCustomer);
+                        } else {
+                            assignedCustomer = null; // Reset if ride is declined
+                        }
                     } else {
                         writer.println("Customer not found or already assigned.");
                     }
+                    
                 }
             }
         } catch (IOException e) {
@@ -174,10 +180,12 @@ public class ClientHandler implements Runnable {
                     case "ride started":
                         notifyCustomerRideStatus("Your ride has started.");
                         inRide = true;
+                        customer.setInRide(true);
                         break;
                     case "ride completed":
                         notifyCustomerRideStatus("Your ride is completed. Thank you!");
                         inRide = false; // Mark ride as completed
+                        customer.setInRide(false);
                         Server.removeWaitingCustomer(customer);
                         Server.removeAvailableDrivers(driver.getUsername());
                         return; // Exit ride loop after completion

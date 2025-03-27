@@ -23,12 +23,12 @@ public class Client {
                         System.out.println("Invalid option. Please type 'register' or 'login'");
                     }
                 }
-                else if (serverMsg.contains("Do you accept? (yes/no)")) {
-                    String response = scanner.nextLine();
-                    writer.println(response);
-                    writer.flush();
+                // else if (serverMsg.contains("Do you accept? (yes/no)")) {
+                //     String response = scanner.nextLine();
+                //     writer.println(response);
+                //     writer.flush();
 
-                }
+                // }
                 else if (serverMsg.contains("Enter your username:") ||
                          serverMsg.contains("Enter your password:") ||
                          serverMsg.contains("Enter your type [Customer/Driver]:")) {
@@ -62,6 +62,7 @@ public class Client {
                 String clientMessage = readInput(scanner);
                 writer.println(clientMessage);
                 writer.flush();
+                
             
                 if (clientMessage.equalsIgnoreCase("disconnect")) {
                     String response = reader.readLine();

@@ -130,19 +130,24 @@ public class Server {
                 driverWriter.println("Customer did not respond. Try another request.");
                 return;
             }
-    
             if (response.trim().equalsIgnoreCase("yes")) {
                 customerWriter.println("Ride confirmed!");
                 driverWriter.println("Ride accepted! Proceed to pick up the customer.");
-    
+            
                 activeRides.put(driver.getUsername(), customer);
-    
                 driverWriter.println("Head to: " + customer.getPickupLocation() + " to pick up: " + customer.getUsername());
-    
+            
+                driver.setInRide(true);
+                driver.setAssignedCustomer(customer);
+            
             } else {
                 customerWriter.println("Ride declined. Searching for another driver...");
                 driverWriter.println("The customer declined. Try another request.");
+            
+                driver.setInRide(false);
+                driver.setAssignedCustomer(null);
             }
+            
         } catch (IOException e) {
             e.printStackTrace();
         }
