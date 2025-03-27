@@ -8,10 +8,12 @@ public class Driver extends User {
     private Socket socket;
     private PrintWriter writer;
     private BufferedReader reader;
+    private boolean inRide;
 
     public Driver(int id, String username, String password, Socket socket) {
         super(id, username, password, "Driver");
         this.socket = socket;
+        this.inRide = false;
         try {
             this.writer = new PrintWriter(socket.getOutputStream(), true);
             this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -31,5 +33,12 @@ public class Driver extends User {
 
     public Socket getSocket() {
         return socket;
+    }
+    public boolean isInRide() {
+        return inRide;
+    }
+
+    public void setInRide(boolean inRide) {
+        this.inRide = inRide;
     }
 }

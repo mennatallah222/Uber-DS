@@ -55,25 +55,51 @@ public class Client {
                     }
                 }
             });
-
+            
             listenerThread.start();
-
+            
             while (true) {
                 String clientMessage = readInput(scanner);
                 writer.println(clientMessage);
                 writer.flush();
+            
                 if (clientMessage.equalsIgnoreCase("disconnect")) {
-                    socket.close();
-                    break;
+                    // Wait for the server's response
+                    String response = reader.readLine();
+            
+                    // Ensure valid server response
+                    if (response == null) {
+                        System.out.println("Server connection closed unexpectedly.");
+                        break; // Exit if the server terminates
+                    }
+            
+                    System.out.println(response);
+            
+                    // Handle disconnection confirmation properly
+                    if (response.equalsIgnoreCase("Disconnected successfully.")) {
+                        try {
+                            socket.close(); // Close the socket
+                        } catch (IOException e) {
+                            System.err.println("Error while closing socket: " + e.getMessage());
+                        }
+                        break; // Exit the loop
+                    }
                 }
+            
+                if (socket.isClosed()) break; // Exit if socket is closed
             }
-
-            listenerThread.join();
-        } 
-        catch (IOException | InterruptedException e) {
-            System.err.println("Client error: " + e.getMessage());
+            
+            // Ensure listenerThread exits cleanly
+            try {
+                listenerThread.join(); // Wait for the listener thread to complete
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // Restore interrupted status
+                System.err.println("Thread interrupted: " + e.getMessage());
+            }
+        } catch (IOException e) {
+            System.err.println("Error: " + e.getMessage());
         }
-    }
+    }            
     
 
     private static synchronized String readInput(Scanner scanner) {

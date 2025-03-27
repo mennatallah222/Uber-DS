@@ -6,8 +6,8 @@ public class ClientHandler implements Runnable {
     private Socket socket;
     private BufferedReader reader;
     private PrintWriter writer;
-    private Customer assignedCustomer; 
-    private boolean inRide = false;   
+    private Customer assignedCustomer;
+    private boolean inRide = false;
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
@@ -56,31 +56,32 @@ public class ClientHandler implements Runnable {
     private void handleCustomer(Customer c) {
         try {
             writer.println("Welcome, " + c.getUsername() + "! Enter 'disconnect' to exit or 'request a ride' to begin.");
-
+            
             while (true) {
                 String message = reader.readLine();
                 if (message == null) break;
-
+    
                 if (message.equalsIgnoreCase("disconnect")) {
                     if (inRide) {
-                        writer.println("You cannot disconnect during an ongoing ride!");
+                        writer.println("❌ You cannot disconnect during an ongoing ride!");
                     } else {
+                        writer.println("Disconnected successfully.");
                         Server.removeClient(c);
                         Server.removeWaitingCustomer(c);
                         socket.close();
                         break;
                     }
                 }
-
+    
                 if (message.equalsIgnoreCase("request a ride")) {
                     writer.println("Enter pickup location:");
                     String pickupLocation = reader.readLine();
                     writer.println("Enter destination:");
                     String destination = reader.readLine();
-
+    
                     c.setPickupLocation(pickupLocation);
                     c.setDestination(destination);
-
+    
                     if (Server.availableDrivers.isEmpty()) {
                         writer.println("No available drivers. Try again later.");
                     } else {
@@ -95,7 +96,7 @@ public class ClientHandler implements Runnable {
             System.out.println("Error handling customer: " + e.getMessage());
         }
     }
-
+    
     private void handleDriver(Driver driver) {
         try {
             writer.println("Welcome, " + driver.getUsername() + "! Enter 'disconnect' to exit or 'offer a ride' to begin.");
@@ -129,7 +130,6 @@ public class ClientHandler implements Runnable {
                                 " - Pickup: " + c.getPickupLocation() +
                                 " - Destination: " + c.getDestination());
                     }
-                    
 
                     writer.println("Enter the username of the customer you want to accept:");
                     String selectedCustomer = reader.readLine();
@@ -161,32 +161,45 @@ public class ClientHandler implements Runnable {
     private void handleRideUpdates(Driver driver, Customer customer) {
         try {
             while (true) {
-                writer.println("Enter ride status ('on the way', 'ride started', 'ride completed'):");
+                writer.println("Enter ride status ('on the way', 'ride started', 'ride completed') or 'disconnect' to exit:");
                 String status = reader.readLine();
-
+    
                 if (status == null) break;
-
+    
                 switch (status.toLowerCase()) {
                     case "on the way":
                         notifyCustomerRideStatus("Your driver '" + driver.getUsername() + "' is on the way.");
+                        inRide = true;
                         break;
                     case "ride started":
                         notifyCustomerRideStatus("Your ride has started.");
+                        inRide = true;
                         break;
                     case "ride completed":
                         notifyCustomerRideStatus("Your ride is completed. Thank you!");
-                        inRide = false; // Allow disconnection
+                        inRide = false; // Mark ride as completed
                         Server.removeWaitingCustomer(customer);
                         Server.removeAvailableDrivers(driver.getUsername());
-                        return; // End ride
+                        return; // Exit ride loop after completion
+                        case "disconnect":
+                        if (inRide) {
+                            writer.println("You cannot disconnect during an ongoing ride!");
+                        } else {
+                            Server.removeClient(driver);
+                            Server.removeAvailableDrivers(driver.getUsername());
+                            writer.println("Disconnected successfully.");
+                            return; // Exit without closing the socket
+                        }                    
+                        break;
                     default:
-                        writer.println("Invalid status! Please use 'on the way', 'ride started', or 'ride completed'.");
+                        writer.println("Invalid status! Use 'on the way', 'ride started', 'ride completed', or 'disconnect'.");
                 }
             }
         } catch (IOException e) {
             System.out.println("Error handling ride updates: " + e.getMessage());
         }
     }
+    
 
     private void notifyCustomerRideStatus(String message) {
         if (assignedCustomer != null) {

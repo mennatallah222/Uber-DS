@@ -10,10 +10,11 @@ public class Customer extends User {
     private String destination;
     private BufferedReader reader;
     private PrintWriter writer;
-
+    private boolean inRide;
     public Customer(int id, String username, String password, Socket socket) {
         super(id, username, password, "Customer");
         this.socket = socket;
+        this.inRide = false;
         try {
             this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.writer = new PrintWriter(socket.getOutputStream(), true);
@@ -49,5 +50,12 @@ public class Customer extends User {
 
     public PrintWriter getWriter() {
         return writer;
+    }
+    public boolean isInRide() {
+        return inRide;
+    }
+
+    public void setInRide(boolean inRide) {
+        this.inRide = inRide;
     }
 }
