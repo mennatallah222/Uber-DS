@@ -198,6 +198,7 @@ public class ClientHandler implements Runnable {
                     if (chosenCustomer != null) {
                         assignedCustomer = chosenCustomer;
                         inRide=true;
+                        assignedCustomer.setInRide(true);
                         currRide=new Ride(chosenCustomer.getId(), chosenCustomer.getPickupLocation(), chosenCustomer.getDestination());
                         currRide.setDriverID(driver.getId());
                         Server.addRide(currRide);
@@ -237,6 +238,7 @@ public class ClientHandler implements Runnable {
 
                 if (status.equalsIgnoreCase("completed")) {
                     inRide = false;
+                    assignedCustomer.setInRide(false);
                     Server.addAvailableDrivers(driver, socket);
                     writer.println("Ride completed! You are now available for new rides.");
                     //review
