@@ -23,12 +23,6 @@ public class Client {
                         System.out.println("Invalid option. Please type 'register' or 'login'");
                     }
                 }
-                // else if (serverMsg.contains("Do you accept? (yes/no)")) {
-                //     String response = scanner.nextLine();
-                //     writer.println(response);
-                //     writer.flush();
-
-                // }
                 else if (serverMsg.contains("Enter your username:") ||
                          serverMsg.contains("Enter your password:") ||
                          serverMsg.contains("Enter your type [Customer/Driver]:")) {
@@ -41,6 +35,12 @@ public class Client {
                 else if (serverMsg.contains("Registered successfully!") || serverMsg.contains("You're logged in!")) {
                     break;
                 }
+                else if(serverMsg.contains("Enter 'stats' to view statistics")) {
+                    String adminInput = readInput(scanner);
+                    writer.println(adminInput);
+                    writer.flush();
+                }
+
             }
 
             Thread listenerThread = new Thread(() -> {
@@ -66,9 +66,13 @@ public class Client {
             
                 if (clientMessage.equalsIgnoreCase("disconnect")) {
                     String response = reader.readLine();
+                    if(response==null){
+                        socket.close();
+                        break;
+                    }
                     System.out.println(response);
             
-                    if (response.equalsIgnoreCase("Disconnected successfully.")) {
+                    if (response.equalsIgnoreCase("Disconnected successfully")) {
                         socket.close();
                         break;
                     }

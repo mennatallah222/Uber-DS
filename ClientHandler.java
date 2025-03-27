@@ -8,6 +8,7 @@ public class ClientHandler implements Runnable {
     private PrintWriter writer;
     private Customer assignedCustomer;
     private boolean inRide = false;
+    private Ride currRide;
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
@@ -21,30 +22,39 @@ public class ClientHandler implements Runnable {
 
             while (true) {
                 writer.println("Do you want to 'register' or 'login'?");
+                writer.flush();
                 String choice = reader.readLine();
 
                 if (choice == null) break;
 
                 if (choice.equalsIgnoreCase("register")) {
                     Authentication.register(reader, writer);
-                } else if (choice.equalsIgnoreCase("login")) {
+                }
+                else if (choice.equalsIgnoreCase("login")) {
                     User user = Authentication.login(reader, writer);
                     if (user == null) {
-                        writer.println("User not registered or invalid username/password, please try again.");
+                        writer.println("User not registered or invalid username/password, please try again");
+                        writer.flush();
                         continue;
                     }
-                    int id = Server.getUserID(user.getUsername());
-
-                    if (user.getType().equalsIgnoreCase("Customer")) {
-                        Customer customer = new Customer(id, user.getUsername(), user.getPassword(), socket);
-                        Server.addCustomer(customer);
-                        handleCustomer(customer);
-                    } else if (user.getType().equalsIgnoreCase("Driver")) {
-                        Driver driver = new Driver(id, user.getUsername(), user.getPassword(), socket);
-                        Server.addDriver(driver, socket);
-                        handleDriver(driver);
+                    if(user.getUsername().equalsIgnoreCase("Admin")&&user.getPassword().equals("123")){
+                        handleAdmin();
                     }
-                } else {
+                    else{
+                        int id = Server.getUserID(user.getUsername());
+
+                        if (user.getType().equalsIgnoreCase("Customer")) {
+                            Customer customer = new Customer(id, user.getUsername(), user.getPassword(), socket);
+                            Server.addCustomer(customer);
+                            handleCustomer(customer);
+                        } else if (user.getType().equalsIgnoreCase("Driver")) {
+                            Driver driver = new Driver(id, user.getUsername(), user.getPassword(), socket);
+                            Server.addDriver(driver, socket);
+                            handleDriver(driver);
+                        }
+                    }
+            }
+            else {
                     writer.println("Invalid choice! Please enter 'register' or 'login'");
                 }
             }
@@ -53,10 +63,50 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    private void handleAdmin() {
+        try {
+            writer.println("Welcome, Admin!");
+            while (true) {
+                writer.println("Enter 'stats' to view statistics, or 'disconnect' to exit");
+                writer.flush();
+                String message = reader.readLine();
+                if (message == null) break;
+                if (message.equalsIgnoreCase("disconnect")) {
+                    writer.println("Disconnected successfully");
+                    socket.close();
+                    break;
+                }
+
+                if (message.equalsIgnoreCase("stats")) {
+                    String statistics = Server.getStatistics();
+                    
+                    if (statistics.isEmpty()) {
+                        writer.println("No statistics available");
+                        writer.flush();
+                    }
+                    else {
+                        writer.println(statistics);
+                        writer.flush();
+                    }
+                    String rides = Server.getAllRides();
+                    writer.println(rides);
+                    writer.flush();
+                }
+                else {
+                    writer.println("Invalid command. Enter 'stats', 'rides', or 'disconnect'");
+                    writer.flush();
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Admin disconnected: " + e.getMessage());
+        }
+    }
+
+
     private void handleCustomer(Customer c) {
         try {
-            writer.println("Welcome, " + c.getUsername() + "! Enter 'disconnect' to exit or 'request a ride' to begin.");
-            
+            writer.println("Welcome, " + c.getUsername() + "! Enter 'disconnect' to exit or 'request a ride'");
+            writer.flush();
             while (true) {
                 String message = reader.readLine();
                 if (message == null) break;
@@ -64,11 +114,12 @@ public class ClientHandler implements Runnable {
                 if (message.equalsIgnoreCase("disconnect")) {
                     if (c.isInRide()) {
                         writer.println("You cannot disconnect during an ongoing ride!");
-                    } else {
-                        writer.println("Disconnected successfully.");
+                    }
+                    else {
                         Server.removeClient(c);
                         Server.removeWaitingCustomer(c);
-                      
+                        writer.println("Disconnected successfully");
+                        socket.close();
                         break;
                     }
                 }
@@ -78,19 +129,20 @@ public class ClientHandler implements Runnable {
                     String pickupLocation = reader.readLine();
                     writer.println("Enter destination:");
                     String destination = reader.readLine();
-    
+
                     c.setPickupLocation(pickupLocation);
                     c.setDestination(destination);
-    
+                    
                     if (Server.availableDrivers.isEmpty()) {
-                        writer.println("No available drivers. Try again later.");
-                    } else {
+                        writer.println("No available drivers. Try again later");
+                    }
+                    else {
                         Server.addWaitingCustomer(c, writer);
-                        Server.broadcast("Customer '" + c.getUsername() + "' requests a ride from '" +
-                                c.getPickupLocation() + "' to '" + c.getDestination() + "'.");
+                        Server.broadcast("Customer '" + c.getUsername() + "' requests a ride from '" + c.getPickupLocation() + "' to '" +c.getDestination()+"'");
                         writer.println("We notified drivers. Please wait...");
                     }
                 }
+
             }
         } catch (IOException e) {
             System.out.println("Error handling customer: " + e.getMessage());
@@ -99,7 +151,7 @@ public class ClientHandler implements Runnable {
     
     private void handleDriver(Driver driver) {
         try {
-            writer.println("Welcome, " + driver.getUsername() + "! Enter 'disconnect' to exit or 'offer a ride' to begin.");
+            writer.println("Welcome, " + driver.getUsername() + "! Enter 'disconnect' to exit or 'offer a ride'");
 
             while (true) {
                 String message = reader.readLine();
@@ -111,6 +163,7 @@ public class ClientHandler implements Runnable {
                     } else {
                         Server.removeClient(driver);
                         Server.removeAvailableDrivers(driver.getUsername());
+                        writer.println("Disconnected successfully");
                         socket.close();
                         break;
                     }
@@ -144,17 +197,17 @@ public class ClientHandler implements Runnable {
 
                     if (chosenCustomer != null) {
                         assignedCustomer = chosenCustomer;
+                        inRide=true;
+                        currRide=new Ride(chosenCustomer.getId(), chosenCustomer.getPickupLocation(), chosenCustomer.getDestination());
+                        currRide.setDriverID(driver.getId());
+                        Server.addRide(currRide);
+                        Server.updateRideStatus(currRide.getRideId(), "on the way", driver.getId());
                         Server.handleRideOffer(chosenCustomer, driver);
-                    
-                        if (driver.getAssignedCustomer() != null) { // Only proceed if customer accepted the ride
-                            inRide = true;
-                            notifyCustomerRideStatus("Driver '" + driver.getUsername() + "' is on the way!");
-                            handleRideUpdates(driver, chosenCustomer);
-                        } else {
-                            assignedCustomer = null; // Reset if ride is declined
-                        }
-                    } else {
-                        writer.println("Customer not found or already assigned.");
+                        notifyCustomerRideStatus("Driver '" + driver.getUsername() + "' is on the way!");
+                        handleRideUpdates(driver, chosenCustomer);
+                    }
+                    else{
+                        writer.println("Customer not found or already assigned");
                     }
                     
                 }
@@ -164,47 +217,60 @@ public class ClientHandler implements Runnable {
         }
     }
 
+
     private void handleRideUpdates(Driver driver, Customer customer) {
         try {
             while (true) {
-                writer.println("Enter ride status ('on the way', 'ride started', 'ride completed') or 'disconnect' to exit:");
+                writer.println("Enter ride status ('started', 'completed') or 'disconnect' to exit:");
                 String status = reader.readLine();
-    
+
                 if (status == null) break;
-    
-                switch (status.toLowerCase()) {
-                    case "on the way":
-                        notifyCustomerRideStatus("Your driver '" + driver.getUsername() + "' is on the way.");
-                        inRide = true;
-                        break;
-                    case "ride started":
-                        notifyCustomerRideStatus("Your ride has started.");
-                        inRide = true;
-                        customer.setInRide(true);
-                        break;
-                    case "ride completed":
-                        notifyCustomerRideStatus("Your ride is completed. Thank you!");
-                        inRide = false; // Mark ride as completed
-                        customer.setInRide(false);
-                        Server.removeWaitingCustomer(customer);
-                        Server.removeAvailableDrivers(driver.getUsername());
-                        return; // Exit ride loop after completion
-                        case "disconnect":
-                        if (inRide) {
-                            writer.println("You cannot disconnect during an ongoing ride!");
-                        } else {
-                            Server.removeClient(driver);
-                            Server.removeAvailableDrivers(driver.getUsername());
-                            writer.println("Disconnected successfully.");
-                            return; // Exit without closing the socket
-                        }                    
-                        break;
-                    default:
-                        writer.println("Invalid status! Use 'on the way', 'ride started', 'ride completed', or 'disconnect'.");
+
+                if (status.equalsIgnoreCase("disconnect")) {
+                    writer.println("You cannot disconnect during an ongoing ride!");
+                    continue;
+                }
+
+                Server.updateRideStatus(currRide.getRideId(), status, driver.getId());
+                writer.println("Ride status updated: " + status);
+                customer.getWriter().println("Your ride status: " + status);
+
+                if (status.equalsIgnoreCase("completed")) {
+                    inRide = false;
+                    Server.addAvailableDrivers(driver, socket);
+                    writer.println("Ride completed! You are now available for new rides.");
+                    //review
+                    customer.getWriter().println("Please provide your rating for the driver:");
+                    int rideComfort = getValidRating(customer, "Ride Comfort (1-5):");
+                    int attitude = getValidRating(customer, "Driver Attitude (1-5):");
+                    int cleanliness = getValidRating(customer, "Car Cleanliness (1-5):");
+                    int safety = getValidRating(customer, "Safety (1-5):");
+
+                    customer.getWriter().println("Enter any additional comments:");
+                    String comment = customer.getReader().readLine();
+
+                    driver.addReview(rideComfort, attitude, cleanliness, safety, comment);
+                    customer.getWriter().println("Thank you for your rating! Driver's new average rating: " + driver.getAvgRating());
+                    writer.println("Your updated average rating: " + driver.getAvgRating());
+
+                    break;
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error handling ride updates: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    private int getValidRating(Customer customer, String message) throws IOException {
+        while (true) {
+            customer.getWriter().println(message);
+            String input = customer.getReader().readLine().trim();
+
+            if (input.matches("[1-5]")) {
+                return Integer.parseInt(input);
+            }
+            else{
+                customer.getWriter().println("Please enter a single number between 1 and 5");
+            }
         }
     }
     
