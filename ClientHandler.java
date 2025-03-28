@@ -158,7 +158,7 @@ public class ClientHandler implements Runnable {
                 if (message == null) break;
 
                 if (message.equalsIgnoreCase("disconnect")) {
-                    if (inRide) {
+                    if (driver.isInRide()) {
                         writer.println("You cannot disconnect during an ongoing ride!");
                     } else {
                         Server.removeClient(driver);
@@ -242,7 +242,7 @@ public class ClientHandler implements Runnable {
                     Server.addAvailableDrivers(driver, socket);
                     writer.println("Ride completed! You are now available for new rides.");
                     //review
-                    customer.getWriter().println("Please provide your rating for the driver:");
+                    customer.getWriter().println("Please provide your rating for the driver: Confirm after each one to go to the next category");
                     int rideComfort = getValidRating(customer, "Ride Comfort (1-5):");
                     int attitude = getValidRating(customer, "Driver Attitude (1-5):");
                     int cleanliness = getValidRating(customer, "Car Cleanliness (1-5):");

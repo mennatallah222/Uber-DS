@@ -178,8 +178,8 @@ public class Server {
         if (customerWriter == null) return;
 
         try {
-            customerWriter.println("Driver " + driver.getUsername() + " has accepted your ride. Do you accept? (yes/no)");
-
+            customerWriter.println("Driver " + driver.getUsername() + " has accepted your ride. ");
+            customerWriter.println("Do you accept? (yes/no)  please confrim 2 timed on the next line after this message");
             BufferedReader customerReader = new BufferedReader(new InputStreamReader(customer.getSocket().getInputStream()));
             String response = customerReader.readLine();
 
