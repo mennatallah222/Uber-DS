@@ -160,7 +160,8 @@ public class ClientHandler implements Runnable {
                 if (message.equalsIgnoreCase("disconnect")) {
                     if (driver.isInRide()) {
                         writer.println("You cannot disconnect during an ongoing ride!");
-                    } else {
+                    }
+                    else{
                         Server.removeClient(driver);
                         Server.removeAvailableDrivers(driver.getUsername());
                         writer.println("Disconnected successfully");
@@ -222,16 +223,13 @@ public class ClientHandler implements Runnable {
     private void handleRideUpdates(Driver driver, Customer customer) {
         try {
             while (true) {
-                writer.println("Enter ride status ('started', 'completed') or 'disconnect' to exit:");
+                writer.println("Enter ride status ('started', 'completed'):");
                 String status = reader.readLine();
-
                 if (status == null) break;
-
-                if (status.equalsIgnoreCase("disconnect")) {
-                    writer.println("You cannot disconnect during an ongoing ride!");
+                if (!status.equalsIgnoreCase("started") && !status.equalsIgnoreCase("completed")) {
+                    writer.println("Please either enter 'started' or 'completed'");
                     continue;
                 }
-
                 Server.updateRideStatus(currRide.getRideId(), status, driver.getId());
                 writer.println("Ride status updated: " + status);
                 customer.getWriter().println("Your ride status: " + status);
@@ -242,7 +240,7 @@ public class ClientHandler implements Runnable {
                     Server.addAvailableDrivers(driver, socket);
                     writer.println("Ride completed! You are now available for new rides.");
                     //review
-                    customer.getWriter().println("Please provide your rating for the driver: Confirm after each one to go to the next category");
+                    customer.getWriter().println("Please provide your rating for the driver:");
                     int rideComfort = getValidRating(customer, "Ride Comfort (1-5):");
                     int attitude = getValidRating(customer, "Driver Attitude (1-5):");
                     int cleanliness = getValidRating(customer, "Car Cleanliness (1-5):");
